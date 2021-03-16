@@ -16,10 +16,9 @@ var (
 	commit  = "none"
 )
 
-// PrintOptions 表示のオプション
-type PrintOptions struct {
-	printSize bool
-	printMd5  bool
+// Option 表示のオプション
+type Option struct {
+	optionalColumns []func(string, os.FileInfo) (string, error)
 }
 
 func main() {
@@ -43,6 +42,18 @@ func main() {
 		flag.PrintDefaults()
 	}
 
+	var optionalColumns []func(string, os.FileInfo) (string, error)
+
+	// オプションは指定順に表示したいので
+	flag.Visit(func(f *flag.Flag) {
+		switch f.Shorthand {
+		case "s":
+			optionalColumns = append(optionalColumns, calcSize)
+		case "m":
+			optionalColumns = append(optionalColumns, calcMd5)
+		}
+	})
+
 	if help {
 		flag.Usage()
 		os.Exit(0)
@@ -55,17 +66,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	err := print(dirs, PrintOptions{printSize: printSize, printMd5: printMd5})
+	err := print(dirs, Option{optionalColumns: optionalColumns})
 	if err != nil {
 		fmt.Println("\nError: ", err)
 		os.Exit(1)
 	}
 }
 
-func print(dirs []string, options PrintOptions) error {
+func print(dirs []string, option Option) error {
 
 	for _, dir := range dirs {
-		err := printDir(dir, options)
+		err := printDir(dir, option)
 		if err != nil {
 			return err
 		}
@@ -74,7 +85,7 @@ func print(dirs []string, options PrintOptions) error {
 	return nil
 }
 
-func printDir(dir string, options PrintOptions) error {
+func printDir(dir string, option Option) error {
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -85,7 +96,7 @@ func printDir(dir string, options PrintOptions) error {
 			return nil
 		}
 
-		printFileInfo(path, info, options)
+		printFileInfo(path, info, option)
 
 		return nil
 	})
@@ -93,21 +104,17 @@ func printDir(dir string, options PrintOptions) error {
 	return err
 }
 
-func printFileInfo(filePath string, info os.FileInfo, options PrintOptions) error {
+func printFileInfo(filePath string, info os.FileInfo, option Option) error {
 
 	fmt.Print(filePath)
 
-	if options.printSize {
-		fmt.Printf("\t%v", info.Size())
-	}
-
-	if options.printMd5 {
-		md5, err := calcMd5(filePath)
+	// オプション分を出力
+	for _, column := range option.optionalColumns {
+		value, err := column(filePath, info)
 		if err != nil {
 			return err
 		}
-
-		fmt.Printf("\t%v", md5)
+		fmt.Printf("\t%s", value)
 	}
 
 	fmt.Println()
@@ -115,7 +122,7 @@ func printFileInfo(filePath string, info os.FileInfo, options PrintOptions) erro
 	return nil
 }
 
-func calcMd5(filePath string) (string, error) {
+func calcMd5(filePath string, info os.FileInfo) (string, error) {
 
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -129,4 +136,9 @@ func calcMd5(filePath string) (string, error) {
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func calcSize(filePath string, info os.FileInfo) (string, error) {
+
+	return fmt.Sprint(info.Size()), nil
 }
