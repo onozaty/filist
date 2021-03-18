@@ -110,7 +110,7 @@ func TestPrintDir(t *testing.T) {
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
 
-	if buf.String() != file1.Name()+"\n"+file2.Name()+"\n" {
+	if buf.String() != "file1\nsub1\\file2\n" {
 		t.Fatal("failed test\n", buf.String())
 	}
 }
@@ -147,7 +147,7 @@ func TestPrintDir_option(t *testing.T) {
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
 
-	if buf.String() != file1.Name()+"\t1\t0cc175b9c0f1b6a831c399e269772661\n" {
+	if buf.String() != "file1\t1\t0cc175b9c0f1b6a831c399e269772661\n" {
 		t.Fatal("failed test\n", buf.String())
 	}
 }

@@ -87,7 +87,12 @@ func print(dirs []string, option Option) error {
 
 func printDir(dir string, option Option) error {
 
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
+	err = filepath.Walk(absDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -96,7 +101,7 @@ func printDir(dir string, option Option) error {
 			return nil
 		}
 
-		printFileInfo(path, info, option)
+		printFileInfo(absDir, path, info, option)
 
 		return nil
 	})
@@ -104,9 +109,14 @@ func printDir(dir string, option Option) error {
 	return err
 }
 
-func printFileInfo(filePath string, info os.FileInfo, option Option) error {
+func printFileInfo(baseDir string, filePath string, info os.FileInfo, option Option) error {
 
-	fmt.Print(filePath)
+	relFilePath, err := filepath.Rel(baseDir, filePath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(relFilePath)
 
 	// オプション分を出力
 	for _, column := range option.optionalColumns {
