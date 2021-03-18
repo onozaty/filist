@@ -18,6 +18,7 @@ var (
 
 // Option 表示のオプション
 type Option struct {
+	showAbsPath     bool
 	optionalColumns []func(string, os.FileInfo) (string, error)
 }
 
@@ -27,19 +28,31 @@ func main() {
 		commit = commit[:7]
 	}
 
-	var printSize bool
-	var printMd5 bool
 	var help bool
+	var showAbsPath bool
 
-	flag.BoolVarP(&printSize, "size", "s", false, "Print file size")
-	flag.BoolVarP(&printMd5, "md5", "m", false, "Print md5 hash")
+	flag.BoolVarP(&showAbsPath, "abs", "a", false, "Absolute path")
+	flag.BoolP("size", "s", false, "Print file size")
+	flag.BoolP("md5", "m", false, "Print md5 hash")
 	flag.BoolVarP(&help, "help", "h", false, "Help")
 	flag.Parse()
 	flag.CommandLine.SortFlags = false
 	flag.Usage = func() {
 		fmt.Printf("filist v%s (%s)\n", version, commit)
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n%s [options] directory ...\noptions\n", os.Args[0], os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] directory ...\noptions\n", os.Args[0])
 		flag.PrintDefaults()
+	}
+
+	if help {
+		flag.Usage()
+		os.Exit(0)
+	}
+
+	dirs := flag.Args()
+
+	if len(dirs) == 0 {
+		flag.Usage()
+		os.Exit(1)
 	}
 
 	var optionalColumns []func(string, os.FileInfo) (string, error)
@@ -54,19 +67,13 @@ func main() {
 		}
 	})
 
-	if help {
-		flag.Usage()
-		os.Exit(0)
+	option := Option{
+		showAbsPath:     showAbsPath,
+		optionalColumns: optionalColumns,
 	}
 
-	dirs := flag.Args()
+	err := print(dirs, option)
 
-	if len(dirs) == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	err := print(dirs, Option{optionalColumns: optionalColumns})
 	if err != nil {
 		fmt.Println("\nError: ", err)
 		os.Exit(1)
@@ -111,12 +118,19 @@ func printDir(dir string, option Option) error {
 
 func printFileInfo(baseDir string, filePath string, info os.FileInfo, option Option) error {
 
-	relFilePath, err := filepath.Rel(baseDir, filePath)
-	if err != nil {
-		return err
-	}
+	if option.showAbsPath {
 
-	fmt.Print(relFilePath)
+		fmt.Print(filePath)
+
+	} else {
+
+		relFilePath, err := filepath.Rel(baseDir, filePath)
+		if err != nil {
+			return err
+		}
+
+		fmt.Print(relFilePath)
+	}
 
 	// オプション分を出力
 	for _, column := range option.optionalColumns {
