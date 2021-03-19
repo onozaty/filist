@@ -8,6 +8,44 @@ import (
 	"testing"
 )
 
+func TestGetSize(t *testing.T) {
+
+	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.Remove(tempFile)
+
+	size, err := getSize(tempFile, info)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	if size != "7" {
+		t.Fatal("failed test\n", size)
+	}
+}
+
+func TestGetMtime(t *testing.T) {
+
+	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.Remove(tempFile)
+
+	mtime, err := getMtime(tempFile, info)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	if len(mtime) != len("2021-03-14T23:24:00.750627+09:00") {
+		t.Fatal("failed test\n", mtime)
+	}
+}
+
 func TestCalcMd5(t *testing.T) {
 
 	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
@@ -46,7 +84,7 @@ func TestCalcMd5_empty(t *testing.T) {
 	}
 }
 
-func TestCalcSize(t *testing.T) {
+func TestCalcSha1(t *testing.T) {
 
 	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
 
@@ -55,13 +93,32 @@ func TestCalcSize(t *testing.T) {
 	}
 	defer os.Remove(tempFile)
 
-	size, err := calcSize(tempFile, info)
+	md5, err := calcSha1(tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 
-	if size != "7" {
-		t.Fatal("failed test\n", size)
+	if md5 != "93be4612c41d23af1891dac5fd0d535736ffc4e3" {
+		t.Fatal("failed test\n", md5)
+	}
+}
+
+func TestCalcSha1_empty(t *testing.T) {
+
+	tempFile, info, err := craeteTempFile([]byte{})
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.Remove(tempFile)
+
+	md5, err := calcSha1(tempFile, info)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	if md5 != "da39a3ee5e6b4b0d3255bfef95601890afd80709" {
+		t.Fatal("failed test\n", md5)
 	}
 }
 
@@ -186,7 +243,7 @@ func TestPrintDir_option(t *testing.T) {
 	}
 	file1.Write([]byte("a"))
 
-	err = printDir(tempDir, Option{optionalColumns: []func(string, os.FileInfo) (string, error){calcSize, calcMd5}})
+	err = printDir(tempDir, Option{optionalColumns: []func(string, os.FileInfo) (string, error){getSize, calcMd5}})
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}

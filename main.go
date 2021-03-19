@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/md5"
+	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -33,7 +34,9 @@ func main() {
 
 	flag.BoolVarP(&showAbsPath, "abs", "a", false, "Absolute path")
 	flag.BoolP("size", "s", false, "Print file size")
-	flag.BoolP("md5", "m", false, "Print md5 hash")
+	flag.BoolP("mtime", "m", false, "Print modification time")
+	flag.BoolP("md5", "M", false, "Print MD5 hash")
+	flag.BoolP("sha1", "S", false, "Print SHA-1 hash")
 	flag.BoolVarP(&help, "help", "h", false, "Help")
 	flag.Parse()
 	flag.CommandLine.SortFlags = false
@@ -59,11 +62,15 @@ func main() {
 
 	// オプションは指定順に表示したいので
 	flag.Visit(func(f *flag.Flag) {
-		switch f.Shorthand {
-		case "s":
-			optionalColumns = append(optionalColumns, calcSize)
-		case "m":
+		switch f.Name {
+		case "size":
+			optionalColumns = append(optionalColumns, getSize)
+		case "mtime":
+			optionalColumns = append(optionalColumns, getMtime)
+		case "md5":
 			optionalColumns = append(optionalColumns, calcMd5)
+		case "sha1":
+			optionalColumns = append(optionalColumns, calcSha1)
 		}
 	})
 
@@ -146,6 +153,16 @@ func printFileInfo(baseDir string, filePath string, info os.FileInfo, option Opt
 	return nil
 }
 
+func getSize(filePath string, info os.FileInfo) (string, error) {
+
+	return fmt.Sprint(info.Size()), nil
+}
+
+func getMtime(filePath string, info os.FileInfo) (string, error) {
+
+	return info.ModTime().Format("2006-01-02T15:04:05.000000-07:00"), nil
+}
+
 func calcMd5(filePath string, info os.FileInfo) (string, error) {
 
 	f, err := os.Open(filePath)
@@ -162,7 +179,18 @@ func calcMd5(filePath string, info os.FileInfo) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func calcSize(filePath string, info os.FileInfo) (string, error) {
+func calcSha1(filePath string, info os.FileInfo) (string, error) {
 
-	return fmt.Sprint(info.Size()), nil
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha1.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
