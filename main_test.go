@@ -122,6 +122,44 @@ func TestCalcSha1_empty(t *testing.T) {
 	}
 }
 
+func TestCalcSha256(t *testing.T) {
+
+	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.Remove(tempFile)
+
+	md5, err := calcSha256(tempFile, info)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	if md5 != "e9a92a2ed0d53732ac13b031a27b071814231c8633c9f41844ccba884d482b16" {
+		t.Fatal("failed test\n", md5)
+	}
+}
+
+func TestCalcSha256_empty(t *testing.T) {
+
+	tempFile, info, err := craeteTempFile([]byte{})
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.Remove(tempFile)
+
+	md5, err := calcSha256(tempFile, info)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	if md5 != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+		t.Fatal("failed test\n", md5)
+	}
+}
+
 func TestPrintDir(t *testing.T) {
 
 	r, w, err := os.Pipe()

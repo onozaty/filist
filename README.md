@@ -16,12 +16,13 @@ The arguments are as follows.
 ```
 Usage: filist [options] directory ...
 options
-  -a, --abs     Absolute path
-  -s, --size    Print file size
-  -m, --mtime   Print modification time
-  -M, --md5     Print MD5 hash
-  -S, --sha1    Print SHA-1 hash
-  -h, --help    Help
+  -a, --abs      Absolute path
+  -s, --size     Print file size
+  -m, --mtime    Print modification time
+  -M, --md5      Print MD5 hash
+  -S, --sha1     Print SHA-1 hash
+      --sha256   Print SHA-256 hash
+  -h, --help     Help
 ```
 
 ## Install

@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -37,6 +38,7 @@ func main() {
 	flag.BoolP("mtime", "m", false, "Print modification time")
 	flag.BoolP("md5", "M", false, "Print MD5 hash")
 	flag.BoolP("sha1", "S", false, "Print SHA-1 hash")
+	flag.BoolP("sha256", "", false, "Print SHA-256 hash")
 	flag.BoolVarP(&help, "help", "h", false, "Help")
 	flag.Parse()
 	flag.CommandLine.SortFlags = false
@@ -71,6 +73,8 @@ func main() {
 			optionalColumns = append(optionalColumns, calcMd5)
 		case "sha1":
 			optionalColumns = append(optionalColumns, calcSha1)
+		case "sha256":
+			optionalColumns = append(optionalColumns, calcSha256)
 		}
 	})
 
@@ -188,6 +192,22 @@ func calcSha1(filePath string, info os.FileInfo) (string, error) {
 	defer f.Close()
 
 	h := sha1.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func calcSha256(filePath string, info os.FileInfo) (string, error) {
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err
 	}
