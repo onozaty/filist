@@ -20,8 +20,7 @@ var (
 
 // Option 表示のオプション
 type Option struct {
-	showAbsPath     bool
-	optionalColumns []func(string, os.FileInfo) (string, error)
+	columns []func(string, string, os.FileInfo) (string, error)
 }
 
 func main() {
@@ -31,9 +30,11 @@ func main() {
 	}
 
 	var help bool
-	var showAbsPath bool
+	var printRelPath bool
+	var printAbsPath bool
 
-	flag.BoolVarP(&showAbsPath, "abs", "a", false, "Absolute path")
+	flag.BoolVarP(&printRelPath, "rel", "r", false, "Print relative path (If neither 'rel' nor 'abs' is specified, 'rel' will be printed first column.)")
+	flag.BoolVarP(&printAbsPath, "abs", "a", false, "Print absolute path")
 	flag.BoolP("size", "s", false, "Print file size")
 	flag.BoolP("mtime", "m", false, "Print modification time")
 	flag.BoolP("md5", "M", false, "Print MD5 hash")
@@ -60,27 +61,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	var optionalColumns []func(string, os.FileInfo) (string, error)
+	var columns []func(string, string, os.FileInfo) (string, error)
+
+	if !printRelPath && !printAbsPath {
+		// relとabsどちらも指定されていなかった場合、先頭にrelを表示
+		columns = append(columns, getRelPath)
+	}
 
 	// オプションは指定順に表示したいので
 	flag.Visit(func(f *flag.Flag) {
 		switch f.Name {
+		case "rel":
+			columns = append(columns, getRelPath)
+		case "abs":
+			columns = append(columns, getAbsPath)
 		case "size":
-			optionalColumns = append(optionalColumns, getSize)
+			columns = append(columns, getSize)
 		case "mtime":
-			optionalColumns = append(optionalColumns, getMtime)
+			columns = append(columns, getMtime)
 		case "md5":
-			optionalColumns = append(optionalColumns, calcMd5)
+			columns = append(columns, calcMd5)
 		case "sha1":
-			optionalColumns = append(optionalColumns, calcSha1)
+			columns = append(columns, calcSha1)
 		case "sha256":
-			optionalColumns = append(optionalColumns, calcSha256)
+			columns = append(columns, calcSha256)
 		}
 	})
 
 	option := Option{
-		showAbsPath:     showAbsPath,
-		optionalColumns: optionalColumns,
+		columns: columns,
 	}
 
 	err := print(dirs, option)
@@ -129,27 +138,15 @@ func printDir(dir string, option Option) error {
 
 func printFileInfo(baseDir string, filePath string, info os.FileInfo, option Option) error {
 
-	if option.showAbsPath {
-
-		fmt.Print(filePath)
-
-	} else {
-
-		relFilePath, err := filepath.Rel(baseDir, filePath)
+	for i, column := range option.columns {
+		if i > 0 {
+			fmt.Printf("\t")
+		}
+		value, err := column(baseDir, filePath, info)
 		if err != nil {
 			return err
 		}
-
-		fmt.Print(relFilePath)
-	}
-
-	// オプション分を出力
-	for _, column := range option.optionalColumns {
-		value, err := column(filePath, info)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("\t%s", value)
+		fmt.Printf("%s", value)
 	}
 
 	fmt.Println()
@@ -157,17 +154,27 @@ func printFileInfo(baseDir string, filePath string, info os.FileInfo, option Opt
 	return nil
 }
 
-func getSize(filePath string, info os.FileInfo) (string, error) {
+func getRelPath(baseDir string, filePath string, info os.FileInfo) (string, error) {
+
+	return filepath.Rel(baseDir, filePath)
+}
+
+func getAbsPath(baseDir string, filePath string, info os.FileInfo) (string, error) {
+
+	return filePath, nil
+}
+
+func getSize(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
 	return fmt.Sprint(info.Size()), nil
 }
 
-func getMtime(filePath string, info os.FileInfo) (string, error) {
+func getMtime(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
 	return info.ModTime().Format("2006-01-02T15:04:05.000000-07:00"), nil
 }
 
-func calcMd5(filePath string, info os.FileInfo) (string, error) {
+func calcMd5(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -183,7 +190,7 @@ func calcMd5(filePath string, info os.FileInfo) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func calcSha1(filePath string, info os.FileInfo) (string, error) {
+func calcSha1(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -199,7 +206,7 @@ func calcSha1(filePath string, info os.FileInfo) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func calcSha256(filePath string, info os.FileInfo) (string, error) {
+func calcSha256(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
 	f, err := os.Open(filePath)
 	if err != nil {

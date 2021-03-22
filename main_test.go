@@ -8,16 +8,54 @@ import (
 	"testing"
 )
 
-func TestGetSize(t *testing.T) {
+func TestRelPath(t *testing.T) {
 
-	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+	baseDir, tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
 
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 	defer os.Remove(tempFile)
 
-	size, err := getSize(tempFile, info)
+	relPath, err := getRelPath(baseDir, tempFile, info)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	if relPath != filepath.Base(tempFile) {
+		t.Fatal("failed test\n", relPath)
+	}
+}
+
+func TestAbsPath(t *testing.T) {
+
+	baseDir, tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.Remove(tempFile)
+
+	relPath, err := getAbsPath(baseDir, tempFile, info)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	if relPath != tempFile {
+		t.Fatal("failed test\n", relPath)
+	}
+}
+
+func TestGetSize(t *testing.T) {
+
+	baseDir, tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.Remove(tempFile)
+
+	size, err := getSize(baseDir, tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -29,14 +67,14 @@ func TestGetSize(t *testing.T) {
 
 func TestGetMtime(t *testing.T) {
 
-	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+	baseDir, tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
 
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 	defer os.Remove(tempFile)
 
-	mtime, err := getMtime(tempFile, info)
+	mtime, err := getMtime(baseDir, tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -48,14 +86,14 @@ func TestGetMtime(t *testing.T) {
 
 func TestCalcMd5(t *testing.T) {
 
-	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+	baseDir, tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
 
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 	defer os.Remove(tempFile)
 
-	md5, err := calcMd5(tempFile, info)
+	md5, err := calcMd5(baseDir, tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -67,14 +105,14 @@ func TestCalcMd5(t *testing.T) {
 
 func TestCalcMd5_empty(t *testing.T) {
 
-	tempFile, info, err := craeteTempFile([]byte{})
+	baseDir, tempFile, info, err := craeteTempFile([]byte{})
 
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 	defer os.Remove(tempFile)
 
-	md5, err := calcMd5(tempFile, info)
+	md5, err := calcMd5(baseDir, tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -86,14 +124,14 @@ func TestCalcMd5_empty(t *testing.T) {
 
 func TestCalcSha1(t *testing.T) {
 
-	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+	baseDir, tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
 
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 	defer os.Remove(tempFile)
 
-	md5, err := calcSha1(tempFile, info)
+	md5, err := calcSha1(baseDir, tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -105,14 +143,14 @@ func TestCalcSha1(t *testing.T) {
 
 func TestCalcSha1_empty(t *testing.T) {
 
-	tempFile, info, err := craeteTempFile([]byte{})
+	baseDir, tempFile, info, err := craeteTempFile([]byte{})
 
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 	defer os.Remove(tempFile)
 
-	md5, err := calcSha1(tempFile, info)
+	md5, err := calcSha1(baseDir, tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -124,14 +162,14 @@ func TestCalcSha1_empty(t *testing.T) {
 
 func TestCalcSha256(t *testing.T) {
 
-	tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
+	baseDir, tempFile, info, err := craeteTempFile([]byte("ABCDEFG"))
 
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 	defer os.Remove(tempFile)
 
-	md5, err := calcSha256(tempFile, info)
+	md5, err := calcSha256(baseDir, tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -143,14 +181,14 @@ func TestCalcSha256(t *testing.T) {
 
 func TestCalcSha256_empty(t *testing.T) {
 
-	tempFile, info, err := craeteTempFile([]byte{})
+	baseDir, tempFile, info, err := craeteTempFile([]byte{})
 
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
 	defer os.Remove(tempFile)
 
-	md5, err := calcSha256(tempFile, info)
+	md5, err := calcSha256(baseDir, tempFile, info)
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -194,7 +232,7 @@ func TestPrintDir(t *testing.T) {
 	}
 	file2.Write([]byte("abc"))
 
-	err = printDir(tempDir, Option{})
+	err = printDir(tempDir, Option{columns: []func(string, string, os.FileInfo) (string, error){getRelPath}})
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -206,56 +244,6 @@ func TestPrintDir(t *testing.T) {
 	io.Copy(&buf, r)
 
 	if buf.String() != "file1\nsub1\\file2\n" {
-		t.Fatal("failed test\n", buf.String())
-	}
-}
-
-func TestPrintDir_abs(t *testing.T) {
-
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	stdout := os.Stdout
-	os.Stdout = w
-
-	tempDir, err := os.MkdirTemp("", "filist")
-	if err != nil {
-		t.Fatal("failed test\n", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	file1, err := os.Create(filepath.Join(tempDir, "file1"))
-	if err != nil {
-		t.Fatal("failed test\n", err)
-	}
-	file1.Write([]byte("a"))
-
-	// サブディレクトリにもファイル配置
-	sub1 := filepath.Join(tempDir, "sub1")
-	err = os.Mkdir(sub1, 0777)
-	if err != nil {
-		t.Fatal("failed test\n", err)
-	}
-
-	file2, err := os.Create(filepath.Join(sub1, "file2"))
-	if err != nil {
-		t.Fatal("failed test\n", err)
-	}
-	file2.Write([]byte("abc"))
-
-	err = printDir(tempDir, Option{showAbsPath: true})
-	if err != nil {
-		t.Fatal("failed test\n", err)
-	}
-
-	os.Stdout = stdout
-	w.Close()
-
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-
-	if buf.String() != file1.Name()+"\n"+file2.Name()+"\n" {
 		t.Fatal("failed test\n", buf.String())
 	}
 }
@@ -281,7 +269,7 @@ func TestPrintDir_option(t *testing.T) {
 	}
 	file1.Write([]byte("a"))
 
-	err = printDir(tempDir, Option{optionalColumns: []func(string, os.FileInfo) (string, error){getSize, calcMd5}})
+	err = printDir(tempDir, Option{columns: []func(string, string, os.FileInfo) (string, error){getRelPath, getSize, calcMd5}})
 	if err != nil {
 		t.Fatal("failed test\n", err)
 	}
@@ -297,20 +285,20 @@ func TestPrintDir_option(t *testing.T) {
 	}
 }
 
-func craeteTempFile(contents []byte) (string, os.FileInfo, error) {
+func craeteTempFile(contents []byte) (string, string, os.FileInfo, error) {
 
 	tempFile, err := os.CreateTemp("", "filist")
 
 	if err != nil {
-		return "", nil, err
+		return os.TempDir(), "", nil, err
 	}
 	defer tempFile.Close()
 
 	tempFile.Write(contents)
 	info, err := tempFile.Stat()
 	if err != nil {
-		return "", nil, err
+		return os.TempDir(), "", nil, err
 	}
 
-	return tempFile.Name(), info, nil
+	return os.TempDir(), tempFile.Name(), info, nil
 }
