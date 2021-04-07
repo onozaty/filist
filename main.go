@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 	"os"
 	"path/filepath"
@@ -176,48 +177,30 @@ func getMtime(baseDir string, filePath string, info os.FileInfo) (string, error)
 
 func calcMd5(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
-	f, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := md5.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return calcHash(filePath, md5.New())
 }
 
 func calcSha1(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
-	f, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := sha1.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return calcHash(filePath, sha1.New())
 }
 
 func calcSha256(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
+	return calcHash(filePath, sha256.New())
+}
+
+func calcHash(filePath string, hash hash.Hash) (string, error) {
+
 	f, err := os.Open(filePath)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	if _, err := io.Copy(hash, f); err != nil {
 		return "", err
 	}
 
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
