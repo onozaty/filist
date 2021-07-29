@@ -1,5 +1,8 @@
 # filist
 
+[![GitHub license](https://img.shields.io/github/license/onozaty/filist)](https://github.com/onozaty/filist/blob/main/LICENSE)
+[![Test](https://github.com/onozaty/filist/actions/workflows/test.yaml/badge.svg)](https://github.com/onozaty/filist/actions/workflows/test.yaml)
+
 Displays a list of files.
 
 ## Usage
