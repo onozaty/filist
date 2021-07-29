@@ -243,7 +243,7 @@ func TestPrintDir(t *testing.T) {
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
 
-	if buf.String() != "file1\nsub1\\file2\n" {
+	if buf.String() != "file1\n"+filepath.Join("sub1", "file2")+"\n" {
 		t.Fatal("failed test\n", buf.String())
 	}
 }
