@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	version = "dev"
-	commit  = "none"
+	Version = "dev"
+	Commit  = "dev"
 )
 
 // Option 表示のオプション
@@ -25,10 +25,6 @@ type Option struct {
 }
 
 func main() {
-
-	if len(commit) > 7 {
-		commit = commit[:7]
-	}
 
 	var help bool
 	var printRelPath bool
@@ -45,8 +41,8 @@ func main() {
 	flag.Parse()
 	flag.CommandLine.SortFlags = false
 	flag.Usage = func() {
-		fmt.Printf("filist v%s (%s)\n", version, commit)
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] directory ...\noptions\n", os.Args[0])
+		fmt.Printf("filist v%s (%s)\n\n", Version, Commit)
+		fmt.Fprint(os.Stderr, "Usage: filist [flags] directory ...\n\nFlags\n")
 		flag.PrintDefaults()
 	}
 
