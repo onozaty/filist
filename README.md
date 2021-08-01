@@ -17,8 +17,9 @@ b/2.txt 163 494ba81d0d828ff9a244da627b5ece47
 The arguments are as follows.
 
 ```
-Usage: filist [options] directory ...
-options
+Usage: filist [flags] directory ...
+
+Flags
   -r, --rel      Print relative path (If neither 'rel' nor 'abs' is specified, 'rel' will be printed first column.)
   -a, --abs      Print absolute path
   -s, --size     Print file size
