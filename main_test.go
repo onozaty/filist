@@ -248,6 +248,115 @@ func TestPrintDir(t *testing.T) {
 	}
 }
 
+func TestPrintDir_includeDir(t *testing.T) {
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout := os.Stdout
+	os.Stdout = w
+
+	tempDir, err := os.MkdirTemp("", "filist")
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	file1, err := os.Create(filepath.Join(tempDir, "file1"))
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	file1.Write([]byte("a"))
+
+	// サブディレクトリにもファイル配置
+	sub1 := filepath.Join(tempDir, "sub1")
+	err = os.Mkdir(sub1, 0777)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	file2, err := os.Create(filepath.Join(sub1, "file2"))
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	file2.Write([]byte("abc"))
+
+	err = printDir(tempDir, Option{
+		includeDirectories: true,
+		columns:            []func(string, string, os.FileInfo) (string, error){getRelPath},
+	})
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	os.Stdout = stdout
+	w.Close()
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+
+	if buf.String() != "file1\n"+"sub1"+string(filepath.Separator)+"\n"+filepath.Join("sub1", "file2")+"\n" {
+		t.Fatal("failed test\n", buf.String())
+	}
+}
+
+func TestPrintDir_excludeFile(t *testing.T) {
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout := os.Stdout
+	os.Stdout = w
+
+	tempDir, err := os.MkdirTemp("", "filist")
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	file1, err := os.Create(filepath.Join(tempDir, "file1"))
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	file1.Write([]byte("a"))
+
+	// サブディレクトリにもファイル配置
+	sub1 := filepath.Join(tempDir, "sub1")
+	err = os.Mkdir(sub1, 0777)
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	file2, err := os.Create(filepath.Join(sub1, "file2"))
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+	file2.Write([]byte("abc"))
+
+	err = printDir(tempDir, Option{
+		includeDirectories: true,
+		excludeFiles:       true,
+		columns:            []func(string, string, os.FileInfo) (string, error){getRelPath},
+	})
+
+	if err != nil {
+		t.Fatal("failed test\n", err)
+	}
+
+	os.Stdout = stdout
+	w.Close()
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+
+	if buf.String() != "sub1"+string(filepath.Separator)+"\n" {
+		t.Fatal("failed test\n", buf.String())
+	}
+}
+
 func TestPrintDir_option(t *testing.T) {
 
 	r, w, err := os.Pipe()

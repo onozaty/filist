@@ -21,7 +21,9 @@ var (
 
 // Option 表示のオプション
 type Option struct {
-	columns []func(string, string, os.FileInfo) (string, error)
+	includeDirectories bool
+	excludeFiles       bool
+	columns            []func(string, string, os.FileInfo) (string, error)
 }
 
 func main() {
@@ -29,6 +31,8 @@ func main() {
 	var help bool
 	var printRelPath bool
 	var printAbsPath bool
+	var includeDirectories bool
+	var excludeFiles bool
 
 	flag.BoolVarP(&printRelPath, "rel", "r", false, "Print relative path (If neither 'rel' nor 'abs' is specified, 'rel' will be printed first column.)")
 	flag.BoolVarP(&printAbsPath, "abs", "a", false, "Print absolute path")
@@ -37,6 +41,8 @@ func main() {
 	flag.BoolP("md5", "M", false, "Print MD5 hash")
 	flag.BoolP("sha1", "S", false, "Print SHA-1 hash")
 	flag.BoolP("sha256", "", false, "Print SHA-256 hash")
+	flag.BoolVarP(&includeDirectories, "include-dir", "", false, "Include directories")
+	flag.BoolVarP(&excludeFiles, "exclude-file", "", false, "Exclude files")
 	flag.BoolVarP(&help, "help", "h", false, "Help")
 	flag.Parse()
 	flag.CommandLine.SortFlags = false
@@ -86,7 +92,9 @@ func main() {
 	})
 
 	option := Option{
-		columns: columns,
+		columns:            columns,
+		includeDirectories: includeDirectories,
+		excludeFiles:       excludeFiles,
 	}
 
 	err := print(dirs, option)
@@ -121,11 +129,19 @@ func printDir(dir string, option Option) error {
 			return err
 		}
 
-		if info.IsDir() {
+		if absDir == path {
 			return nil
 		}
 
-		printFileInfo(absDir, path, info, option)
+		if info.IsDir() {
+			if option.includeDirectories {
+				return printFileInfo(absDir, path, info, option)
+			}
+		} else {
+			if !option.excludeFiles {
+				return printFileInfo(absDir, path, info, option)
+			}
+		}
 
 		return nil
 	})
@@ -153,35 +169,68 @@ func printFileInfo(baseDir string, filePath string, info os.FileInfo, option Opt
 
 func getRelPath(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
-	return filepath.Rel(baseDir, filePath)
+	relPath, err := filepath.Rel(baseDir, filePath)
+	if err != nil {
+		return "", err
+	}
+
+	if info.IsDir() {
+		relPath = relPath + string(filepath.Separator)
+	}
+
+	return relPath, nil
 }
 
 func getAbsPath(baseDir string, filePath string, info os.FileInfo) (string, error) {
+
+	if info.IsDir() {
+		filePath = filePath + string(filepath.Separator)
+	}
 
 	return filePath, nil
 }
 
 func getSize(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
+	if info.IsDir() {
+		return "", nil
+	}
+
 	return fmt.Sprint(info.Size()), nil
 }
 
 func getMtime(baseDir string, filePath string, info os.FileInfo) (string, error) {
+
+	if info.IsDir() {
+		return "", nil
+	}
 
 	return info.ModTime().Format("2006-01-02T15:04:05.000000-07:00"), nil
 }
 
 func calcMd5(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
+	if info.IsDir() {
+		return "", nil
+	}
+
 	return calcHash(filePath, md5.New())
 }
 
 func calcSha1(baseDir string, filePath string, info os.FileInfo) (string, error) {
 
+	if info.IsDir() {
+		return "", nil
+	}
+
 	return calcHash(filePath, sha1.New())
 }
 
 func calcSha256(baseDir string, filePath string, info os.FileInfo) (string, error) {
+
+	if info.IsDir() {
+		return "", nil
+	}
 
 	return calcHash(filePath, sha256.New())
 }
