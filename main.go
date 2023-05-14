@@ -36,7 +36,7 @@ func main() {
 	os.Exit(exitCode)
 }
 
-func run(arguments []string, output io.Writer) int {
+func run(arguments []string, out io.Writer) int {
 
 	var help bool
 	var printRelPath bool
@@ -59,16 +59,15 @@ func run(arguments []string, output io.Writer) int {
 
 	flagSet.SortFlags = false
 	flagSet.Usage = func() {
-		fmt.Fprintf(output, "filist v%s (%s)\n\n", Version, Commit)
-		fmt.Fprint(output, "Usage: filist [flags] directory ...\n\nFlags\n")
+		fmt.Fprintf(out, "filist v%s (%s)\n\n", Version, Commit)
+		fmt.Fprint(out, "Usage: filist [flags] directory ...\n\nFlags\n")
 		flagSet.PrintDefaults()
-		fmt.Fprintln(output)
 	}
-	flagSet.SetOutput(output)
+	flagSet.SetOutput(out)
 
 	if err := flagSet.Parse(arguments); err != nil {
 		flagSet.Usage()
-		fmt.Fprintln(output, err)
+		fmt.Fprintf(out, "Error: %v", err)
 		return NG
 	}
 
@@ -117,20 +116,20 @@ func run(arguments []string, output io.Writer) int {
 		excludeFiles:       excludeFiles,
 	}
 
-	err := print(dirs, option)
+	err := print(out, dirs, option)
 
 	if err != nil {
-		fmt.Fprintln(output, err)
+		fmt.Fprintf(out, "Error: %v", err)
 		return NG
 	}
 
 	return OK
 }
 
-func print(dirs []string, option Option) error {
+func print(out io.Writer, dirs []string, option Option) error {
 
 	for _, dir := range dirs {
-		err := printDir(dir, option)
+		err := printDir(out, dir, option)
 		if err != nil {
 			return err
 		}
@@ -139,7 +138,7 @@ func print(dirs []string, option Option) error {
 	return nil
 }
 
-func printDir(dir string, option Option) error {
+func printDir(out io.Writer, dir string, option Option) error {
 
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
@@ -157,11 +156,11 @@ func printDir(dir string, option Option) error {
 
 		if info.IsDir() {
 			if option.includeDirectories {
-				return printFileInfo(absDir, path, info, option)
+				return printFileInfo(out, absDir, path, info, option)
 			}
 		} else {
 			if !option.excludeFiles {
-				return printFileInfo(absDir, path, info, option)
+				return printFileInfo(out, absDir, path, info, option)
 			}
 		}
 
@@ -171,20 +170,20 @@ func printDir(dir string, option Option) error {
 	return err
 }
 
-func printFileInfo(baseDir string, filePath string, info os.FileInfo, option Option) error {
+func printFileInfo(out io.Writer, baseDir string, filePath string, info os.FileInfo, option Option) error {
 
 	for i, column := range option.columns {
 		if i > 0 {
-			fmt.Printf("\t")
+			fmt.Fprintf(out, "\t")
 		}
 		value, err := column(baseDir, filePath, info)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%s", value)
+		fmt.Fprintf(out, "%s", value)
 	}
 
-	fmt.Println()
+	fmt.Fprintln(out)
 
 	return nil
 }
