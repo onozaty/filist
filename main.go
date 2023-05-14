@@ -26,7 +26,17 @@ type Option struct {
 	columns            []func(string, string, os.FileInfo) (string, error)
 }
 
+const (
+	OK int = 0
+	NG int = 1
+)
+
 func main() {
+	exitCode := run(os.Args[1:], os.Stdout)
+	os.Exit(exitCode)
+}
+
+func run(arguments []string, output io.Writer) int {
 
 	var help bool
 	var printRelPath bool
@@ -34,34 +44,44 @@ func main() {
 	var includeDirectories bool
 	var excludeFiles bool
 
-	flag.BoolVarP(&printRelPath, "rel", "r", false, "Print relative path (If neither 'rel' nor 'abs' is specified, 'rel' will be printed first column.)")
-	flag.BoolVarP(&printAbsPath, "abs", "a", false, "Print absolute path")
-	flag.BoolP("size", "s", false, "Print file size")
-	flag.BoolP("mtime", "m", false, "Print modification time")
-	flag.BoolP("md5", "M", false, "Print MD5 hash")
-	flag.BoolP("sha1", "S", false, "Print SHA-1 hash")
-	flag.BoolP("sha256", "", false, "Print SHA-256 hash")
-	flag.BoolVarP(&includeDirectories, "include-dir", "", false, "Include directories")
-	flag.BoolVarP(&excludeFiles, "exclude-file", "", false, "Exclude files")
-	flag.BoolVarP(&help, "help", "h", false, "Help")
-	flag.Parse()
-	flag.CommandLine.SortFlags = false
-	flag.Usage = func() {
-		fmt.Printf("filist v%s (%s)\n\n", Version, Commit)
-		fmt.Fprint(os.Stderr, "Usage: filist [flags] directory ...\n\nFlags\n")
-		flag.PrintDefaults()
+	flagSet := flag.NewFlagSet("filist", flag.ContinueOnError)
+
+	flagSet.BoolVarP(&printRelPath, "rel", "r", false, "Print relative path (If neither 'rel' nor 'abs' is specified, 'rel' will be printed first column.)")
+	flagSet.BoolVarP(&printAbsPath, "abs", "a", false, "Print absolute path")
+	flagSet.BoolP("size", "s", false, "Print file size")
+	flagSet.BoolP("mtime", "m", false, "Print modification time")
+	flagSet.BoolP("md5", "M", false, "Print MD5 hash")
+	flagSet.BoolP("sha1", "S", false, "Print SHA-1 hash")
+	flagSet.BoolP("sha256", "", false, "Print SHA-256 hash")
+	flagSet.BoolVarP(&includeDirectories, "include-dir", "", false, "Include directories")
+	flagSet.BoolVarP(&excludeFiles, "exclude-file", "", false, "Exclude files")
+	flagSet.BoolVarP(&help, "help", "h", false, "Help")
+
+	flagSet.SortFlags = false
+	flagSet.Usage = func() {
+		fmt.Fprintf(output, "filist v%s (%s)\n\n", Version, Commit)
+		fmt.Fprint(output, "Usage: filist [flags] directory ...\n\nFlags\n")
+		flagSet.PrintDefaults()
+		fmt.Fprintln(output)
+	}
+	flagSet.SetOutput(output)
+
+	if err := flagSet.Parse(arguments); err != nil {
+		flagSet.Usage()
+		fmt.Fprintln(output, err)
+		return NG
 	}
 
 	if help {
-		flag.Usage()
-		os.Exit(0)
+		flagSet.Usage()
+		return OK
 	}
 
-	dirs := flag.Args()
+	dirs := flagSet.Args()
 
 	if len(dirs) == 0 {
-		flag.Usage()
-		os.Exit(1)
+		flagSet.Usage()
+		return NG
 	}
 
 	var columns []func(string, string, os.FileInfo) (string, error)
@@ -72,7 +92,7 @@ func main() {
 	}
 
 	// オプションは指定順に表示したいので
-	flag.Visit(func(f *flag.Flag) {
+	flagSet.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "rel":
 			columns = append(columns, getRelPath)
@@ -100,9 +120,11 @@ func main() {
 	err := print(dirs, option)
 
 	if err != nil {
-		fmt.Println("\nError: ", err)
-		os.Exit(1)
+		fmt.Fprintln(output, err)
+		return NG
 	}
+
+	return OK
 }
 
 func print(dirs []string, option Option) error {
