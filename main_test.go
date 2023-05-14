@@ -392,7 +392,8 @@ func TestRun_DirNotFound(t *testing.T) {
 
 	// ASSERT
 	require.Equal(t, NG, exitCode)
-	assert.Contains(t, out.String(), "Error: CreateFile "+targetDir)
+	assert.Contains(t, out.String(), "Error: ") // 実況環境で異なるので
+	assert.Contains(t, out.String(), targetDir)
 }
 
 func TestRun_Help(t *testing.T) {
