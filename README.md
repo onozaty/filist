@@ -30,6 +30,7 @@ Flags
       --sha256         Print SHA-256 hash
       --include-dir    Include directories
       --exclude-file   Exclude files
+  -l, --level int      Number of directory level (Default is unlimited)
   -h, --help           Help
 ```
 
@@ -56,6 +57,14 @@ If `--include-dir` and `--exclude-file` are specified, only directories are prin
 
 ```
 $ filist --include-dir --exclude-file .
+b/
+```
+
+If `-l` is specified, you can specify the number of levels to be displayed.
+
+```
+$ filist -l 1 --include-dir .
+a.txt
 b/
 ```
 
