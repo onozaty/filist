@@ -342,6 +342,177 @@ func TestRun_ExcludeFile(t *testing.T) {
 	assert.Equal(t, "", out.String())
 }
 
+func TestRun_Level1(t *testing.T) {
+
+	// ARRANGE
+	temp := t.TempDir()
+
+	setupFiles(t, temp)
+
+	out := new(bytes.Buffer)
+
+	// ACT
+	exitCode := run(
+		[]string{
+			temp,
+			"-a",
+			"-r",
+			"--include-dir",
+			"-l", "1",
+		},
+		out,
+	)
+
+	// ASSERT
+	require.Equal(t, OK, exitCode)
+
+	expected := allLines(
+		line(
+			filepath.Join(temp, "1.txt"),
+			"1.txt",
+		),
+		line(
+			filepath.Join(temp, "a")+string(filepath.Separator),
+			"a"+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "x")+string(filepath.Separator),
+			"x"+string(filepath.Separator),
+		),
+	)
+	assert.Equal(t, expected, out.String())
+}
+
+func TestRun_Level2(t *testing.T) {
+
+	// ARRANGE
+	temp := t.TempDir()
+
+	setupFiles(t, temp)
+
+	out := new(bytes.Buffer)
+
+	// ACT
+	exitCode := run(
+		[]string{
+			temp,
+			"-a",
+			"-r",
+			"--include-dir",
+			"-l", "2",
+		},
+		out,
+	)
+
+	// ASSERT
+	require.Equal(t, OK, exitCode)
+
+	expected := allLines(
+		line(
+			filepath.Join(temp, "1.txt"),
+			"1.txt",
+		),
+		line(
+			filepath.Join(temp, "a")+string(filepath.Separator),
+			"a"+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "a", "a.txt"),
+			filepath.Join("a", "a.txt"),
+		),
+		line(
+			filepath.Join(temp, "a", "b.txt"),
+			filepath.Join("a", "b.txt"),
+		),
+		line(
+			filepath.Join(temp, "a", "xxx")+string(filepath.Separator),
+			filepath.Join("a", "xxx")+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "x")+string(filepath.Separator),
+			"x"+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "x", "y")+string(filepath.Separator),
+			filepath.Join("x", "y")+string(filepath.Separator),
+		),
+	)
+	assert.Equal(t, expected, out.String())
+}
+
+func TestRun_Level3(t *testing.T) {
+
+	// ARRANGE
+	temp := t.TempDir()
+
+	setupFiles(t, temp)
+
+	out := new(bytes.Buffer)
+
+	// ACT
+	exitCode := run(
+		[]string{
+			temp,
+			"-a",
+			"-r",
+			"--include-dir",
+			"-l", "3",
+		},
+		out,
+	)
+
+	// ASSERT
+	require.Equal(t, OK, exitCode)
+
+	expected := allLines(
+		line(
+			filepath.Join(temp, "1.txt"),
+			"1.txt",
+		),
+		line(
+			filepath.Join(temp, "a")+string(filepath.Separator),
+			"a"+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "a", "a.txt"),
+			filepath.Join("a", "a.txt"),
+		),
+		line(
+			filepath.Join(temp, "a", "b.txt"),
+			filepath.Join("a", "b.txt"),
+		),
+		line(
+			filepath.Join(temp, "a", "xxx")+string(filepath.Separator),
+			filepath.Join("a", "xxx")+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "a", "xxx", "x.txt"),
+			filepath.Join("a", "xxx", "x.txt"),
+		),
+		line(
+			filepath.Join(temp, "a", "xxx", "yyy")+string(filepath.Separator),
+			filepath.Join("a", "xxx", "yyy")+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "a", "xxx", "zzz")+string(filepath.Separator),
+			filepath.Join("a", "xxx", "zzz")+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "x")+string(filepath.Separator),
+			"x"+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "x", "y")+string(filepath.Separator),
+			filepath.Join("x", "y")+string(filepath.Separator),
+		),
+		line(
+			filepath.Join(temp, "x", "y", "z")+string(filepath.Separator),
+			filepath.Join("x", "y", "z")+string(filepath.Separator),
+		),
+	)
+	assert.Equal(t, expected, out.String())
+}
+
 func TestRun_MultiDir(t *testing.T) {
 
 	// ARRANGE
@@ -430,6 +601,7 @@ Flags
       --sha256         Print SHA-256 hash
       --include-dir    Include directories
       --exclude-file   Exclude files
+  -l, --level int      Number of directory level (Default is unlimited)
   -h, --help           Help
 `
 	assert.Equal(t, expected, out.String())
@@ -467,6 +639,7 @@ Flags
       --sha256         Print SHA-256 hash
       --include-dir    Include directories
       --exclude-file   Exclude files
+  -l, --level int      Number of directory level (Default is unlimited)
   -h, --help           Help
 `
 	assert.Equal(t, expected, out.String())

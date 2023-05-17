@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	flag "github.com/spf13/pflag"
 )
@@ -23,6 +25,7 @@ var (
 type Option struct {
 	includeDirectories bool
 	excludeFiles       bool
+	level              int
 	columns            []func(string, string, os.FileInfo) (string, error)
 }
 
@@ -43,6 +46,7 @@ func run(arguments []string, out io.Writer) int {
 	var printAbsPath bool
 	var includeDirectories bool
 	var excludeFiles bool
+	var level int
 
 	flagSet := flag.NewFlagSet("filist", flag.ContinueOnError)
 
@@ -55,6 +59,7 @@ func run(arguments []string, out io.Writer) int {
 	flagSet.BoolP("sha256", "", false, "Print SHA-256 hash")
 	flagSet.BoolVarP(&includeDirectories, "include-dir", "", false, "Include directories")
 	flagSet.BoolVarP(&excludeFiles, "exclude-file", "", false, "Exclude files")
+	flagSet.IntVarP(&level, "level", "l", 0, "Number of directory level (Default is unlimited)")
 	flagSet.BoolVarP(&help, "help", "h", false, "Help")
 
 	flagSet.SortFlags = false
@@ -114,6 +119,7 @@ func run(arguments []string, out io.Writer) int {
 		columns:            columns,
 		includeDirectories: includeDirectories,
 		excludeFiles:       excludeFiles,
+		level:              level,
 	}
 
 	err := print(out, dirs, option)
@@ -145,7 +151,7 @@ func printDir(out io.Writer, dir string, option Option) error {
 		return err
 	}
 
-	err = filepath.Walk(absDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.WalkDir(absDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -154,12 +160,37 @@ func printDir(out io.Writer, dir string, option Option) error {
 			return nil
 		}
 
-		if info.IsDir() {
+		if d.IsDir() {
 			if option.includeDirectories {
-				return printFileInfo(out, absDir, path, info, option)
+
+				info, err := d.Info()
+				if err != nil {
+					return err
+				}
+
+				if err := printFileInfo(out, absDir, path, info, option); err != nil {
+					return err
+				}
 			}
+
+			depth, err := getDepth(absDir, path)
+			if err != nil {
+				return err
+			}
+
+			if option.level != 0 && depth >= int(option.level) {
+				// 指定レベル以上になったら、そのディレクトリ配下は見ない
+				return filepath.SkipDir
+			}
+
 		} else {
 			if !option.excludeFiles {
+
+				info, err := d.Info()
+				if err != nil {
+					return err
+				}
+
 				return printFileInfo(out, absDir, path, info, option)
 			}
 		}
@@ -168,6 +199,16 @@ func printDir(out io.Writer, dir string, option Option) error {
 	})
 
 	return err
+}
+
+func getDepth(basePath string, path string) (int, error) {
+
+	relPath, err := filepath.Rel(basePath, path)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(strings.Split(relPath, string(filepath.Separator))), nil
 }
 
 func printFileInfo(out io.Writer, baseDir string, filePath string, info os.FileInfo, option Option) error {
