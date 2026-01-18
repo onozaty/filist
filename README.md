@@ -70,6 +70,21 @@ b/
 
 ## Install
 
+### Homebrew (macOS/Linux)
+
+```
+brew install onozaty/tap/filist
+```
+
+### Scoop (Windows)
+
+```
+scoop bucket add onozaty https://github.com/onozaty/scoop-bucket
+scoop install filist
+```
+
+### Binary Download
+
 You can download the binary from the following.
 
 * https://github.com/onozaty/filist/releases/latest
