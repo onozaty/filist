@@ -35,3 +35,23 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+homebrew_casks:
+  - repository:
+      owner: onozaty
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    description: "A flexible command-line tool to list files with various information"
+    homepage: "https://github.com/onozaty/filist"
+    license: MIT
+    skip_upload: auto
+
+scoops:
+  - repository:
+      owner: onozaty
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_BUCKET_TOKEN }}"
+    description: "A flexible command-line tool to list files with various information"
+    homepage: "https://github.com/onozaty/filist"
+    license: MIT
+    skip_upload: auto

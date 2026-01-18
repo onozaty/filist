@@ -4,7 +4,7 @@
 [![Test](https://github.com/onozaty/filist/actions/workflows/test.yaml/badge.svg)](https://github.com/onozaty/filist/actions/workflows/test.yaml)
 [![codecov](https://codecov.io/gh/onozaty/filist/branch/main/graph/badge.svg?token=P7TKQCKYD5)](https://codecov.io/gh/onozaty/filist)
 
-Displays a list of files.
+A flexible command-line tool to list files with various information such as file size, modification time, and cryptographic hashes.
 
 ## Usage
 
